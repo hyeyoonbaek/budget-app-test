@@ -118,7 +118,10 @@ def test_filter_by_category_matches_step2_category() -> None:
 def test_filter_by_category_is_case_insensitive() -> None:
     transactions = [
         sample_transaction(amount=-12000, description="lunch"),
-        {**sample_transaction(amount=-1500, description="metro"), "category": "food"},
+        {
+            **sample_transaction(amount=-1500, description="metro"),
+            "category": "food",
+        },
     ]
 
     filtered = filter_by_category(transactions, "FOOD")
@@ -141,8 +144,12 @@ def test_filter_by_category_returns_independent_results() -> None:
 
     assert len(transactions) == 50
     assert len(filter_by_category(transactions, "여행")) == 6
+
+
 def test_load_transactions_from_csv_reads_step1_file() -> None:
-    transactions = load_transactions_from_csv(Path("data/step1_transactions.csv"))
+    transactions = load_transactions_from_csv(
+        Path("data/step1_transactions.csv"),
+    )
 
     assert len(transactions) == 10
     assert transactions[0]["amount"] == -12000
