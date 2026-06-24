@@ -38,7 +38,7 @@ def load_transactions(storage_path: Path) -> list[dict[str, Any]]:
     if not storage_path.exists():
         return []
 
-    with storage_path.open(newline="", encoding="utf-8") as csv_file:
+    with storage_path.open(newline="", encoding="utf-8-sig") as csv_file:
         return [_parse_transaction(row) for row in csv.DictReader(csv_file)]
 
 
@@ -52,6 +52,19 @@ def list_transactions(storage_path: Path) -> list[dict[str, Any]]:
         A list of transaction records.
     """
     return load_transactions(storage_path)
+
+
+def get_balance(storage_path: Path) -> float:
+    """Return the sum of income and expense amounts.
+
+    Args:
+        storage_path: Path to the CSV storage file.
+
+    Returns:
+        The total balance from all transaction amounts.
+    """
+    transactions = load_transactions(storage_path)
+    return float(sum(transaction["amount"] for transaction in transactions))
 
 
 def _parse_transaction(row: dict[str, str]) -> dict[str, Any]:

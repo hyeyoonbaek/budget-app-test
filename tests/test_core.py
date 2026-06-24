@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from budget.core import add_transaction, load_transactions
+from budget.core import add_transaction, get_balance, load_transactions
 
 
 def sample_transaction(amount: int, description: str) -> dict[str, object]:
@@ -71,3 +71,30 @@ def test_add_transaction_accepts_empty_description(tmp_path: Path) -> None:
     transactions = load_transactions(storage_path)
 
     assert transactions[0]["description"] == ""
+
+
+def test_get_balance_returns_zero_for_empty_storage(tmp_path: Path) -> None:
+    storage_path = tmp_path / "transactions.csv"
+
+    assert get_balance(storage_path) == 0.0
+
+
+def test_get_balance_sums_income_and_expense_amounts(tmp_path: Path) -> None:
+    storage_path = tmp_path / "transactions.csv"
+
+    add_transaction(
+        storage_path,
+        sample_transaction(amount=3500000, description="income"),
+    )
+    add_transaction(
+        storage_path,
+        sample_transaction(amount=-12000, description="expense"),
+    )
+
+    assert get_balance(storage_path) == 3488000
+
+
+def test_get_balance_matches_step2_transactions() -> None:
+    storage_path = Path("data/step2_transactions.csv")
+
+    assert get_balance(storage_path) == 24285027
