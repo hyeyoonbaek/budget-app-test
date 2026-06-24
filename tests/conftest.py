@@ -18,9 +18,21 @@ def step3_csv_path() -> Path:
 
 
 @pytest.fixture(scope="session")
+def step4_csv_path() -> Path:
+    """Return the large CSV path for performance tests."""
+    return Path("data/step4_large_transactions.csv")
+
+
+@pytest.fixture(scope="session")
 def step3_transactions(step3_csv_path: Path) -> list[dict[str, object]]:
     """Load step3 transactions once for the test session."""
     return load_transactions_from_csv(step3_csv_path)
+
+
+@pytest.fixture(scope="session")
+def step4_transactions(step4_csv_path: Path) -> list[dict[str, object]]:
+    """Load step4 transactions once for the test session."""
+    return load_transactions_from_csv(step4_csv_path)
 
 
 @pytest.fixture(scope="session")
@@ -35,6 +47,12 @@ def step3_summary(
 def client(step3_csv_path: Path) -> TestClient:
     """Return a fresh client for the default web app."""
     return TestClient(create_app(step3_csv_path))
+
+
+@pytest.fixture
+def large_client(step4_csv_path: Path) -> TestClient:
+    """Return a fresh client for the large CSV web app."""
+    return TestClient(create_app(step4_csv_path))
 
 
 @pytest.fixture
