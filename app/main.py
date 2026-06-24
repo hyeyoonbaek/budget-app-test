@@ -17,50 +17,55 @@ from budget.core import (
     parse_iso_date,
 )
 
-app = FastAPI()
-
-TRANSACTIONS_CSV_PATH = Path("data/step3_transactions.csv")
+DEFAULT_TRANSACTIONS_CSV_PATH = Path("data/step3_transactions.csv")
 RECENT_TRANSACTION_LIMIT = 10
 DATE_ERROR_MESSAGE = "날짜는 YYYY-MM-DD 형식이어야 합니다."
 
 
-@app.get("/", response_class=HTMLResponse)
-def root() -> str:
-    """Return the web app landing text."""
-    return "<h1>가계부 웹</h1>"
+def create_app(csv_path: Path = DEFAULT_TRANSACTIONS_CSV_PATH) -> FastAPI:
+    """Create a FastAPI app for the budget web UI."""
+    app = FastAPI()
+    app.state.transactions_csv_path = csv_path
+
+    @app.get("/", response_class=HTMLResponse)
+    def root() -> str:
+        """Return the web app landing text."""
+        return "<h1>가계부 웹</h1>"
+
+    @app.get("/transactions", response_class=HTMLResponse)
+    def transactions_page() -> str:
+        """Return the recent transaction list page."""
+        transactions = _recent_transactions(app.state.transactions_csv_path)
+        return _render_transactions_page(transactions)
+
+    @app.get("/summary", response_class=HTMLResponse)
+    def summary_page() -> str:
+        """Return the monthly summary page."""
+        summary = _monthly_summary(app.state.transactions_csv_path)
+        return _render_summary_page(summary)
+
+    @app.get("/search", response_class=HTMLResponse)
+    def search_page(
+        start: str | None = None,
+        end: str | None = None,
+        category: str | None = None,
+    ) -> str:
+        """Return the filtered transaction list page."""
+        try:
+            transactions = _search_transactions(
+                app.state.transactions_csv_path,
+                start,
+                end,
+                category,
+            )
+        except ValueError:
+            return _render_error_page("검색", DATE_ERROR_MESSAGE)
+        return _render_search_page(transactions)
+
+    return app
 
 
-@app.get("/transactions", response_class=HTMLResponse)
-def transactions_page() -> str:
-    """Return the recent transaction list page."""
-    transactions = _recent_transactions(TRANSACTIONS_CSV_PATH)
-    return _render_transactions_page(transactions)
-
-
-@app.get("/summary", response_class=HTMLResponse)
-def summary_page() -> str:
-    """Return the monthly summary page."""
-    summary = _monthly_summary(TRANSACTIONS_CSV_PATH)
-    return _render_summary_page(summary)
-
-
-@app.get("/search", response_class=HTMLResponse)
-def search_page(
-    start: str | None = None,
-    end: str | None = None,
-    category: str | None = None,
-) -> str:
-    """Return the filtered transaction list page."""
-    try:
-        transactions = _search_transactions(
-            TRANSACTIONS_CSV_PATH,
-            start,
-            end,
-            category,
-        )
-    except ValueError:
-        return _render_error_page("검색", DATE_ERROR_MESSAGE)
-    return _render_search_page(transactions)
+app = create_app()
 
 
 def _recent_transactions(csv_path: Path) -> list[dict[str, Any]]:
