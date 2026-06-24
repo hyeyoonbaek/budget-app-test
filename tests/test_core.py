@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from budget.core import add_transaction, get_balance, load_transactions
+from budget.core import (
+    add_transaction,
+    filter_by_category,
+    get_balance,
+    load_transactions,
+)
 
 
 def sample_transaction(amount: int, description: str) -> dict[str, object]:
@@ -98,3 +103,40 @@ def test_get_balance_matches_step2_transactions() -> None:
     storage_path = Path("data/step2_transactions.csv")
 
     assert get_balance(storage_path) == 24285027
+
+
+def test_filter_by_category_matches_step2_category() -> None:
+    transactions = load_transactions(Path("data/step2_transactions.csv"))
+
+    filtered = filter_by_category(transactions, "여행")
+
+    assert len(filtered) == 6
+    assert all(transaction["category"] == "여행" for transaction in filtered)
+
+
+def test_filter_by_category_is_case_insensitive() -> None:
+    transactions = [
+        sample_transaction(amount=-12000, description="lunch"),
+        {**sample_transaction(amount=-1500, description="metro"), "category": "food"},
+    ]
+
+    filtered = filter_by_category(transactions, "FOOD")
+
+    assert len(filtered) == 1
+    assert filtered[0]["category"] == "food"
+
+
+def test_filter_by_category_returns_empty_list_for_missing_category() -> None:
+    transactions = load_transactions(Path("data/step2_transactions.csv"))
+
+    assert filter_by_category(transactions, "없는카테고리") == []
+
+
+def test_filter_by_category_returns_independent_results() -> None:
+    transactions = load_transactions(Path("data/step2_transactions.csv"))
+
+    filtered = filter_by_category(transactions, "여행")
+    filtered.clear()
+
+    assert len(transactions) == 50
+    assert len(filter_by_category(transactions, "여행")) == 6

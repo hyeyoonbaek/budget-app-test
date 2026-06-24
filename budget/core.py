@@ -67,6 +67,27 @@ def get_balance(storage_path: Path) -> float:
     return float(sum(transaction["amount"] for transaction in transactions))
 
 
+def filter_by_category(
+    transactions: list[dict[str, Any]],
+    category: str,
+) -> list[dict[str, Any]]:
+    """Return transactions matching the category, ignoring case.
+
+    Args:
+        transactions: Transaction records to filter.
+        category: Category name to match.
+
+    Returns:
+        A new list containing matching transaction records.
+    """
+    normalized_category = category.casefold()
+    return [
+        transaction
+        for transaction in transactions
+        if str(transaction["category"]).casefold() == normalized_category
+    ]
+
+
 def _parse_transaction(row: dict[str, str]) -> dict[str, Any]:
     """Convert a CSV row into the transaction dictionary shape."""
     transaction: dict[str, Any] = {field: row[field] for field in FIELDNAMES}
