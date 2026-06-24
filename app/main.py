@@ -20,6 +20,15 @@ from budget.core import (
 DEFAULT_TRANSACTIONS_CSV_PATH = Path("data/step3_transactions.csv")
 RECENT_TRANSACTION_LIMIT = 10
 DATE_ERROR_MESSAGE = "날짜는 YYYY-MM-DD 형식이어야 합니다."
+TRANSACTION_HEADERS = (
+    "date",
+    "type",
+    "category",
+    "description",
+    "amount",
+    "memo",
+)
+SUMMARY_HEADERS = ("month", "income", "expense", "net")
 
 
 def create_app(csv_path: Path = DEFAULT_TRANSACTIONS_CSV_PATH) -> FastAPI:
@@ -114,27 +123,37 @@ def _transaction_date(transaction: dict[str, Any]) -> str:
 def _render_transactions_page(transactions: list[dict[str, Any]]) -> str:
     """Render the transactions page HTML."""
     if not transactions:
-        return "<h1>거래 목록</h1><p>거래 내역이 없습니다.</p>"
-    return f"<h1>거래 목록</h1>{_render_transactions_table(transactions)}"
+        return _render_message_page("거래 목록", "거래 내역이 없습니다.")
+    return _render_page("거래 목록", _render_transactions_table(transactions))
 
 
 def _render_summary_page(summary: dict[str, dict[str, int]]) -> str:
     """Render the monthly summary page HTML."""
     if not summary:
-        return "<h1>월별 요약</h1><p>월별 요약 내역이 없습니다.</p>"
-    return f"<h1>월별 요약</h1>{_render_summary_table(summary)}"
+        return _render_message_page("월별 요약", "월별 요약 내역이 없습니다.")
+    return _render_page("월별 요약", _render_summary_table(summary))
 
 
 def _render_search_page(transactions: list[dict[str, Any]]) -> str:
     """Render the search page HTML."""
     if not transactions:
-        return "<h1>검색 결과</h1><p>검색 결과가 없습니다.</p>"
-    return f"<h1>검색 결과</h1>{_render_transactions_table(transactions)}"
+        return _render_message_page("검색 결과", "검색 결과가 없습니다.")
+    return _render_page("검색 결과", _render_transactions_table(transactions))
 
 
 def _render_error_page(title: str, message: str) -> str:
     """Render a simple error page."""
-    return f"<h1>{escape(title)}</h1><p>{escape(message)}</p>"
+    return _render_message_page(title, message)
+
+
+def _render_page(title: str, body: str) -> str:
+    """Render a simple titled page."""
+    return f"<h1>{escape(title)}</h1>{body}"
+
+
+def _render_message_page(title: str, message: str) -> str:
+    """Render a titled page with a paragraph message."""
+    return _render_page(title, f"<p>{escape(message)}</p>")
 
 
 def _render_transactions_table(transactions: list[dict[str, Any]]) -> str:
@@ -142,17 +161,7 @@ def _render_transactions_table(transactions: list[dict[str, Any]]) -> str:
     rows = "".join(
         _render_transaction_row(transaction) for transaction in transactions
     )
-    headers = (
-        "<tr>"
-        "<th>date</th>"
-        "<th>type</th>"
-        "<th>category</th>"
-        "<th>description</th>"
-        "<th>amount</th>"
-        "<th>memo</th>"
-        "</tr>"
-    )
-    return f"<table>{headers}{rows}</table>"
+    return _render_table(TRANSACTION_HEADERS, rows)
 
 
 def _render_summary_table(summary: dict[str, dict[str, int]]) -> str:
@@ -161,15 +170,18 @@ def _render_summary_table(summary: dict[str, dict[str, int]]) -> str:
         _render_summary_row(month, totals)
         for month, totals in sorted(summary.items())
     )
-    headers = (
-        "<tr>"
-        "<th>month</th>"
-        "<th>income</th>"
-        "<th>expense</th>"
-        "<th>net</th>"
-        "</tr>"
-    )
-    return f"<table>{headers}{rows}</table>"
+    return _render_table(SUMMARY_HEADERS, rows)
+
+
+def _render_table(headers: tuple[str, ...], rows: str) -> str:
+    """Render a table from headers and pre-rendered rows."""
+    return f"<table>{_render_header_row(headers)}{rows}</table>"
+
+
+def _render_header_row(headers: tuple[str, ...]) -> str:
+    """Render a table header row."""
+    header_cells = "".join(f"<th>{escape(header)}</th>" for header in headers)
+    return f"<tr>{header_cells}</tr>"
 
 
 def _render_transaction_row(transaction: dict[str, Any]) -> str:
