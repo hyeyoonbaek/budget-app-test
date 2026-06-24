@@ -35,10 +35,22 @@ def load_transactions(storage_path: Path) -> list[dict[str, Any]]:
     Returns:
         A list of transaction records.
     """
-    if not storage_path.exists():
+    return load_transactions_from_csv(storage_path)
+
+
+def load_transactions_from_csv(csv_path: Path) -> list[dict[str, Any]]:
+    """Load transactions from a CSV file.
+
+    Args:
+        csv_path: Path to the CSV file.
+
+    Returns:
+        A list of transaction records.
+    """
+    if not csv_path.exists():
         return []
 
-    with storage_path.open(newline="", encoding="utf-8-sig") as csv_file:
+    with csv_path.open(newline="", encoding="utf-8-sig") as csv_file:
         return [_parse_transaction(row) for row in csv.DictReader(csv_file)]
 
 
@@ -86,6 +98,48 @@ def filter_by_category(
         for transaction in transactions
         if str(transaction["category"]).casefold() == normalized_category
     ]
+
+
+def monthly_summary(
+    transactions: list[dict[str, Any]],
+) -> dict[str, dict[str, int]]:
+    """Return monthly income, expense, and net totals.
+
+    Args:
+        transactions: Transaction records to summarize.
+
+    Returns:
+        A mapping of YYYY-MM to income, expense, and net totals.
+    """
+    summary: dict[str, dict[str, int]] = {}
+
+    for transaction in transactions:
+        _update_month_summary(summary, transaction)
+
+    return summary
+
+
+def _update_month_summary(
+    summary: dict[str, dict[str, int]],
+    transaction: dict[str, Any],
+) -> None:
+    """Add one transaction into the monthly summary bucket."""
+    month = _get_transaction_month(transaction)
+    month_summary = summary.setdefault(month, _empty_month_summary())
+    amount = int(transaction["amount"])
+    month_summary["income"] += max(amount, 0)
+    month_summary["expense"] += min(amount, 0)
+    month_summary["net"] += amount
+
+
+def _get_transaction_month(transaction: dict[str, Any]) -> str:
+    """Return the YYYY-MM month key for a transaction."""
+    return str(transaction["date"])[:7]
+
+
+def _empty_month_summary() -> dict[str, int]:
+    """Return a fresh monthly summary bucket."""
+    return {"income": 0, "expense": 0, "net": 0}
 
 
 def _parse_transaction(row: dict[str, str]) -> dict[str, Any]:

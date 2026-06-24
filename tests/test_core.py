@@ -9,6 +9,7 @@ from budget.core import (
     filter_by_category,
     get_balance,
     load_transactions,
+    load_transactions_from_csv,
 )
 
 
@@ -140,3 +141,10 @@ def test_filter_by_category_returns_independent_results() -> None:
 
     assert len(transactions) == 50
     assert len(filter_by_category(transactions, "여행")) == 6
+def test_load_transactions_from_csv_reads_step1_file() -> None:
+    transactions = load_transactions_from_csv(Path("data/step1_transactions.csv"))
+
+    assert len(transactions) == 10
+    assert transactions[0]["amount"] == -12000
+    assert isinstance(transactions[0]["amount"], int)
+    assert transactions[1]["amount"] == 3500000
