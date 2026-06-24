@@ -10,6 +10,7 @@ from budget.core import (
     get_balance,
     load_transactions,
     load_transactions_from_csv,
+    monthly_summary,
 )
 
 
@@ -155,3 +156,33 @@ def test_load_transactions_from_csv_reads_step1_file() -> None:
     assert transactions[0]["amount"] == -12000
     assert isinstance(transactions[0]["amount"], int)
     assert transactions[1]["amount"] == 3500000
+
+
+def test_load_transactions_from_csv_reads_large_file() -> None:
+    transactions = load_transactions_from_csv(
+        Path("data/step4_large_transactions.csv"),
+    )
+
+    assert len(transactions) == 5000
+    assert transactions[0]["date"] == "2020-01-01"
+    assert transactions[-1]["date"] == "2026-06-17"
+
+
+def test_get_balance_matches_large_file() -> None:
+    storage_path = Path("data/step4_large_transactions.csv")
+
+    assert get_balance(storage_path) == 1134968783.0
+
+
+def test_monthly_summary_handles_large_file() -> None:
+    transactions = load_transactions_from_csv(
+        Path("data/step4_large_transactions.csv"),
+    )
+
+    summary = monthly_summary(transactions)
+
+    assert len(summary) >= 65
+    assert len(summary) == 78
+    assert summary["2020-01"]["income"] == 37502538
+    assert summary["2020-01"]["expense"] == -11873710
+    assert summary["2020-01"]["net"] == 25628828
