@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -100,6 +101,25 @@ def filter_by_category(
     ]
 
 
+def parse_iso_date(value: str) -> date:
+    """Parse a YYYY-MM-DD date string."""
+    return date.fromisoformat(value)
+
+
+def filter_transactions(
+    transactions: list[dict[str, Any]],
+    start: date | None = None,
+    end: date | None = None,
+    category: str | None = None,
+) -> list[dict[str, Any]]:
+    """Return transactions filtered by date range and category."""
+    return [
+        transaction
+        for transaction in transactions
+        if _matches_filters(transaction, start, end, category)
+    ]
+
+
 def monthly_summary(
     transactions: list[dict[str, Any]],
 ) -> dict[str, dict[str, int]]:
@@ -130,6 +150,41 @@ def _update_month_summary(
     month_summary["income"] += max(amount, 0)
     month_summary["expense"] += min(amount, 0)
     month_summary["net"] += amount
+
+
+def _matches_filters(
+    transaction: dict[str, Any],
+    start: date | None,
+    end: date | None,
+    category: str | None,
+) -> bool:
+    """Return whether a transaction matches every active filter."""
+    transaction_date = parse_iso_date(str(transaction["date"]))
+    return (
+        _matches_start(transaction_date, start)
+        and _matches_end(transaction_date, end)
+        and _matches_category(transaction, category)
+    )
+
+
+def _matches_start(transaction_date: date, start: date | None) -> bool:
+    """Return whether the transaction is on or after the start date."""
+    return start is None or transaction_date >= start
+
+
+def _matches_end(transaction_date: date, end: date | None) -> bool:
+    """Return whether the transaction is on or before the end date."""
+    return end is None or transaction_date <= end
+
+
+def _matches_category(
+    transaction: dict[str, Any],
+    category: str | None,
+) -> bool:
+    """Return whether the category matches, ignoring case."""
+    if not category:
+        return True
+    return str(transaction["category"]).casefold() == category.casefold()
 
 
 def _get_transaction_month(transaction: dict[str, Any]) -> str:

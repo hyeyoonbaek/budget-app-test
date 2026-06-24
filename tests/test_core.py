@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 from budget.core import (
     add_transaction,
+    filter_transactions,
     filter_by_category,
     get_balance,
     load_transactions,
@@ -186,3 +188,30 @@ def test_monthly_summary_handles_large_file() -> None:
     assert summary["2020-01"]["income"] == 37502538
     assert summary["2020-01"]["expense"] == -11873710
     assert summary["2020-01"]["net"] == 25628828
+
+
+def test_filter_transactions_returns_all_when_no_filters() -> None:
+    transactions = load_transactions_from_csv(
+        Path("data/step3_transactions.csv"),
+    )
+
+    filtered = filter_transactions(transactions)
+
+    assert len(filtered) == 200
+
+
+def test_filter_transactions_applies_date_range_and_category() -> None:
+    transactions = load_transactions_from_csv(
+        Path("data/step3_transactions.csv"),
+    )
+
+    filtered = filter_transactions(
+        transactions,
+        start=date(2025, 1, 1),
+        end=date(2025, 1, 31),
+        category="식비",
+    )
+
+    assert len(filtered) == 1
+    assert filtered[0]["date"] == "2025-01-10"
+    assert filtered[0]["description"] == "점심식사"

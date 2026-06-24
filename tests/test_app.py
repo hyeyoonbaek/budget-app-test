@@ -77,3 +77,37 @@ def test_summary_route_shows_message_when_empty(
 
     assert response.status_code == 200
     assert "월별 요약 내역이 없습니다." in response.text
+
+
+def test_search_route_returns_all_when_no_filters() -> None:
+    client = TestClient(app)
+
+    response = client.get("/search")
+
+    assert response.status_code == 200
+    assert "<table>" in response.text
+    assert "2025-01-02" in response.text
+    assert "2026-03-29" in response.text
+
+
+def test_search_route_filters_by_date_range_and_category() -> None:
+    client = TestClient(app)
+
+    response = client.get(
+        "/search",
+        params={"start": "2025-01-01", "end": "2025-01-31", "category": "식비"},
+    )
+
+    assert response.status_code == 200
+    assert "2025-01-10" in response.text
+    assert "점심식사" in response.text
+    assert "환급금" not in response.text
+
+
+def test_search_route_returns_friendly_error_for_bad_date() -> None:
+    client = TestClient(app)
+
+    response = client.get("/search", params={"start": "2025/01/01"})
+
+    assert response.status_code == 200
+    assert "날짜는 YYYY-MM-DD 형식이어야 합니다." in response.text
