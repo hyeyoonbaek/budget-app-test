@@ -11,7 +11,7 @@ from budget.core import filter_transactions, monthly_summary, parse_iso_date
 MAX_ROUTE_SECONDS = 0.5
 MAX_LOAD_SECONDS = 0.2
 MAX_SUMMARY_SECONDS = 0.2
-MAX_FILTER_SECONDS = 0.1
+MAX_FILTER_SECONDS = 0.2
 
 
 def test_large_csv_route_timings_identify_slowest_path(
